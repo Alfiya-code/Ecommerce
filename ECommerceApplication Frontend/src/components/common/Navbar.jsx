@@ -1,0 +1,123 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+import './Navbar.css';
+import AuthModal from './AuthModal';
+
+
+const Navbar = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('login'); // 'login' or 'signup'
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { user, logout } = useAuth();
+  const { cartItems } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const currentSearchTerm = queryParams.get('name') || '';
+    setSearchTerm(currentSearchTerm);
+  }, [location.search]);
+
+  console.log(user);
+
+  const openModal = (type) => {
+    setModalType(type);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleSearchChange = (e) => {
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    if (newSearchTerm) {
+      navigate(`/all-products?name=${newSearchTerm}`);
+    } else {
+      navigate('/all-products');
+    }
+  };
+
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  return (
+    <>
+      <div className="top-bar">Velora Members get Exclusive Early Access to Sale</div>
+      <header>
+        <div className="nav-container">
+          {/* Logo */}
+          <Link to="/" className="logo-box">
+            <svg width="32" height="32" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M25 0L46.65 12.5V37.5L25 50L3.35 37.5V12.5L25 0Z" fill="#FF69B4"/>
+              <path d="M25 10L35 25L25 40L15 25L25 10Z" fill="white"/>
+            </svg>
+            <div className="logo-text">Velora</div>
+          </Link>
+
+          <div className="hamburger" onClick={toggleMenu}>
+            &#9776;
+          </div>
+
+          <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
+            <li className="nav-item active"><Link to="/category/women" className="transition-colors duration-200 ease-in-out hover:text-gray-700">Women</Link></li>
+            <li className="nav-item"><Link to="/category/men" className="transition-colors duration-200 ease-in-out hover:text-gray-700">Men</Link></li>
+            <li className="nav-item"><Link to="/category/cosmetics" className="transition-colors duration-200 ease-in-out hover:text-gray-700">Cosmetics</Link></li>
+            <li className="nav-item"><Link to="/category/accessories" className="transition-colors duration-200 ease-in-out hover:text-gray-700">Accessories</Link></li>
+            {user && user.role !== 'Admin' && (
+              <li className="nav-item"><Link to="/customer-dashboard" className="transition-colors duration-200 ease-in-out hover:text-gray-700">Customer Dashboard</Link></li>
+            )}
+          </ul>
+
+          <div className="nav-right">
+            <div className="search-box">
+              <span>🔍</span>
+              <input
+                type="text"
+                placeholder="Search for products..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+
+            {user ? (
+              <>
+                <span className="welcome-msg">Hi, {user.email?.split('@')[0]}</span>
+                <button onClick={handleLogout} className="auth-btn">Logout</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => openModal('login')} className="auth-btn transition-all duration-300 ease-in-out hover:scale-105 hover:bg-gray-100">Login</button>
+                <button onClick={() => openModal('signup')} className="auth-btn bg-black text-white border-none transition-all duration-300 ease-in-out hover:scale-105 hover:bg-gray-800">
+                  Sign Up
+                </button>
+              </>
+            )}
+
+            <Link to="/wishlist" className="icon-nav">♡</Link>
+            <Link to="/cart" className="icon-nav">
+              🛒
+              <span className="cart-badge">{cartItemCount}</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+      {isModalOpen && <AuthModal type={modalType} closeModal={closeModal} />}
+    </>
+  );
+};
+
+export default Navbar;
